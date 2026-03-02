@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramadan Prayer Times – Karachi 1447</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d1117;--card:#161b22;--card2:#1c2430;
+  --gold:#c9a84c;--gold2:#e8c76a;
+  --text:#e6edf3;--muted:#8b949e;
+  --green:#3fb950;--accent:#388bfd;
+  --red:#f85149;--orange:#ffa657;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;}
+
+/* Header */
+.header{text-align:center;margin-bottom:16px;}
+.header h1{font-size:1.05rem;font-weight:600;color:var(--gold2);letter-spacing:.04em;}
+.header p{font-size:.72rem;color:var(--muted);margin-top:2px;}
+
+/* Day Nav */
+.day-nav{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.nav-btn{background:var(--card);border:1px solid #30363d;color:var(--text);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:background .2s;}
+.nav-btn:hover{background:var(--card2);}
+.nav-btn:disabled{opacity:.3;cursor:default;}
+.day-label{text-align:center;min-width:160px;}
+.day-label .hijri{font-size:.85rem;font-weight:600;color:var(--gold2);}
+.day-label .greg{font-size:.72rem;color:var(--muted);margin-top:1px;}
+
+/* Sehri/Iftar */
+.banner{width:100%;max-width:360px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.banner-card{border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;}
+.banner-card.sehri{background:#0d1f33;border:1px solid #1b3a5e;}
+.banner-card.iftar{background:#1e1a0e;border:1px solid #4a3a00;}
+.b-label{font-size:.63rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.b-time{font-size:1rem;font-weight:700;}
+.banner-card.sehri .b-time{color:#58a6ff;}
+.banner-card.iftar .b-time{color:var(--gold2);}
+.b-sub{font-size:.63rem;color:var(--muted);}
+
+/* Clock */
+.clock-wrap{position:relative;width:260px;height:260px;margin:0 auto 16px;}
+canvas{position:absolute;top:0;left:0;}
+.clock-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:120px;}
+.next-label{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.next-prayer{font-size:1rem;font-weight:700;color:var(--gold2);margin-top:2px;}
+.next-time{font-size:.8rem;color:var(--text);margin-top:1px;}
+.live-time{font-size:.7rem;color:var(--muted);margin-top:6px;}
+
+/* Clock tooltip */
+.clock-tip{position:absolute;pointer-events:none;background:#1c2430ee;border:1px solid #30363d;border-radius:8px;padding:5px 9px;white-space:nowrap;opacity:0;transition:opacity .15s;z-index:10;backdrop-filter:blur(6px);}
+.clock-tip.show{opacity:1;}
+.clock-tip .ct-name{font-size:.68rem;font-weight:600;margin-bottom:1px;}
+.clock-tip .ct-time{font-size:.78rem;font-weight:700;color:var(--text);}
+.clock-tip .ct-range{font-size:.62rem;color:var(--muted);}
+
+/* Section label */
+.section-label{width:100%;max-width:360px;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:4px 0 6px;padding-left:2px;}
+
+/* Unified timeline */
+.timeline{width:100%;max-width:360px;display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+
+/* Shared row base */
+.tl-row{display:flex;align-items:center;gap:8px;border-radius:10px;padding:7px 10px;transition:border-color .2s,background .2s;}
+
+/* Prayer rows — solid bg */
+.tl-row.prayer{background:var(--card);border:1px solid #21262d;}
+.tl-row.prayer.active{border-color:var(--gold);background:#1e1a0e;}
+.tl-row.prayer.nxt{border-color:var(--accent);background:#0d1f33;}
+
+/* More time rows — subtle, dashed left border */
+.tl-row.more{background:transparent;border:1px dashed #21262d;}
+
+/* Makrooh rows — red tint */
+.tl-row.makrooh{background:#1a0d0d;border:1px solid #3d1515;}
+
+/* Info rows — very subtle */
+.tl-row.info{background:transparent;border:1px dotted #21262d;}
+
+/* Dot indicators */
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.tl-dot.solid{/* filled via inline style */}
+.tl-dot.ring{background:transparent !important;border:2px solid;box-sizing:border-box;}
+.tl-dot.diamond{width:10px;height:10px;border-radius:2px;transform:rotate(45deg);flex-shrink:0;}
+
+/* Content */
+.tl-body{flex:1;min-width:0;}
+.tl-top{display:flex;align-items:baseline;gap:6px;}
+.tl-name{font-size:.72rem;font-weight:500;color:var(--muted);}
+.tl-row.prayer .tl-name{color:var(--text);font-weight:600;}
+.tl-note{font-size:.58rem;color:var(--muted);font-style:italic;}
+.tl-time{font-size:.88rem;font-weight:600;color:var(--text);margin-top:1px;}
+.tl-row.more .tl-time{font-weight:500;font-size:.82rem;color:var(--muted);}
+.tl-row.makrooh .tl-time{color:#f85149;font-weight:600;font-size:.82rem;}
+.tl-row.info .tl-time{font-weight:500;font-size:.82rem;color:var(--muted);}
+.tl-end{font-size:.68rem;color:var(--muted);font-weight:400;}
+
+/* Badge */
+.badge{font-size:.58rem;padding:2px 6px;border-radius:20px;font-weight:600;letter-spacing:.04em;flex-shrink:0;white-space:nowrap;}
+.badge.now{background:#2a1f00;color:var(--gold);border:1px solid var(--gold);}
+.badge.next{background:#0d1f33;color:var(--accent);border:1px solid var(--accent);}
+
+.footer{font-size:.63rem;color:var(--muted);margin-top:16px;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🕌 Ramadan 1447 — Karachi</h1>
+  <p>Darul Ifta, Jamia Darul Uloom</p>
+</div>
+
+<div class="day-nav">
+  <button class="nav-btn" id="prevBtn">‹</button>
+  <div class="day-label">
+    <div class="hijri" id="hijriLabel">—</div>
+    <div class="greg"  id="gregLabel">—</div>
+  </div>
+  <button class="nav-btn" id="nextBtn">›</button>
+</div>
+
+<div class="banner">
+  <div class="banner-card sehri">
+    <span class="b-label">🌙 Sehri Ends</span>
+    <span class="b-time" id="sehriTime">—</span>
+    <span class="b-sub">Fajr begins</span>
+  </div>
+  <div class="banner-card iftar">
+    <span class="b-label">🌅 Iftar / Maghrib</span>
+    <span class="b-time" id="iftarTime">—</span>
+    <span class="b-sub">Maghrib prayer</span>
+  </div>
+</div>
+
+<!-- Clock -->
+<div class="clock-wrap" id="clockWrap">
+  <canvas id="clockCanvas"></canvas>
+  <div class="clock-center">
+    <div class="next-label">Next Prayer</div>
+    <div class="next-prayer" id="nextName">—</div>
+    <div class="next-time"  id="nextTime">—</div>
+    <div class="live-time"  id="liveTime">—</div>
+  </div>
+  <div class="clock-tip" id="clockTip">
+    <div class="ct-name" id="ctName"></div>
+    <div class="ct-time" id="ctTime"></div>
+    <div class="ct-range" id="ctRange"></div>
+  </div>
+</div>
+
+<div class="section-label">All Prayer &amp; Key Times</div>
+<div id="timeline" class="timeline"></div>
+
+<div class="footer">Times in PKT (UTC+5) · Auto-detects today's date</div>
+
+<script src="prayer-data.js"></script>
+<script>
+// ── Distinct color palette ──
+// Each prayer/time has a unique, easily distinguishable color
+const C_FAJR     = '#58a6ff'; // sky blue (dawn)
+const C_ISHRAQ   = '#ff7b54'; // coral (sunrise)
+const C_CHAASHT  = '#e8b931'; // amber (mid-morning)
+const C_NUSF     = '#7ee787'; // mint green (midday info)
+const C_ZAWAL    = '#f85149'; // red (makrooh)
+const C_ZUHR     = '#3fb950'; // green (midday prayer)
+const C_ASR      = '#d2a8ff'; // lavender (afternoon)
+const C_MAGHRIB  = '#f0883e'; // sunset orange
+const C_ISHA     = '#58d5c9'; // teal (night)
+const C_MAKROOH  = '#f85149'; // red
+const C_TAHAJJUD = '#bc8cff'; // purple (late night)
+
+const ALL_TIMES = [
+  {key:"fajr",        label:"Fajr",          color:C_FAJR,    type:"prayer", endKey:"fajrEnd"},
+  {key:"fajrEnd",     label:"Makrooh",       color:C_MAKROOH, type:"makrooh",endKey:"ishraq",     note:"Fajr end → Ishraq"},
+  {key:"ishraq",      label:"Ishraq",        color:C_ISHRAQ,  type:"more",   endKey:"ishraqEnd",  note:"~15 min after sunrise"},
+  {key:"chaasht",     label:"Chaasht",       color:C_CHAASHT, type:"more",   endKey:"chaashtEnd", note:"Mid-morning prayer"},
+  {key:"nusfUlNahar", label:"Nusf-ul-Nahar", color:C_NUSF,    type:"info",   note:"Islamic midday (Shari)"},
+  {key:"zawal",       label:"Zawal",         color:C_ZAWAL,   type:"makrooh",endKey:"zawalEnd",   note:"Solar noon — avoid prayer"},
+  {key:"zuhr",        label:"Zuhr",          color:C_ZUHR,    type:"prayer", endKey:"zuhrEnd"},
+  {key:"asr",         label:"Asr",           color:C_ASR,     type:"prayer", endKey:"asrEnd"},
+  {key:"maghrib",     label:"Maghrib",       color:C_MAGHRIB, type:"prayer", endKey:"maghribEnd"},
+  {key:"isha",        label:"Isha",          color:C_ISHA,    type:"prayer", endKey:"ishaEnd"},
+  {key:"ishaMakrooh", label:"Isha Makrooh",  color:C_MAKROOH, type:"makrooh",note:"Avoid delaying Isha past this"},
+  {key:"tahajjud",    label:"Tahajjud",      color:C_TAHAJJUD,type:"more",   endKey:"tahajjudEnd",note:"Last third of the night"},
+];
+
+const PRAYERS = [
+  {key:"fajr",    label:"Fajr",    color:C_FAJR},
+  {key:"ishraq",  label:"Ishraq",  color:C_ISHRAQ},
+  {key:"zuhr",    label:"Zuhr",    color:C_ZUHR},
+  {key:"asr",     label:"Asr",     color:C_ASR},
+  {key:"maghrib", label:"Maghrib", color:C_MAGHRIB},
+  {key:"isha",    label:"Isha",    color:C_ISHA},
+];
+
+const MAKROOH = [
+  {s:"fajrEnd",  e:"ishraq",   label:"Makrooh (Fajr–Ishraq)"},
+  {s:"zawal",    e:"zawalEnd", label:"Makrooh (Zawal)"},
+  {s:"asr",      e:"maghrib",  label:"Makrooh (Asr–Maghrib)"},
+];
+
+function parseTime(str) {
+  if (!str) return null;
+  const m = str.match(/(\d+):(\d+)\s*(am|pm)/i);
+  if (!m) return null;
+  let h = parseInt(m[1]), min = parseInt(m[2]), ap = m[3].toLowerCase();
+  if (ap==='pm' && h!==12) h+=12;
+  if (ap==='am' && h===12) h=0;
+  return h*60+min;
+}
+function fmt(str){ return str ? str.replace(' am',' AM').replace(' pm',' PM') : '—'; }
+
+function getTodayIdx(){
+  const n=new Date();
+  const k=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  const i=DATA.findIndex(r=>r.greg===k);
+  return i>=0?i:0;
+}
+function isToday(i){
+  const n=new Date();
+  const k=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  return DATA[i].greg===k;
+}
+
+let currentIdx=getTodayIdx();
+
+// ── Canvas (supersampled for sharpness) ──
+const canvas=document.getElementById('clockCanvas'),ctx=canvas.getContext('2d');
+const SCALE=Math.max(3, window.devicePixelRatio||1);
+canvas.width=260*SCALE;
+canvas.height=260*SCALE;
+canvas.style.width='260px';
+canvas.style.height='260px';
+canvas.style.imageRendering='auto';
+ctx.scale(SCALE,SCALE);
+const CX=130,CY=130,R=116;
+
+function angleFor(m){ return (m/1440)*Math.PI*2-Math.PI/2; }
+
+// Store marker positions for hover detection
+let markerHitTargets = [];
+
+function drawTriangleMarker(angle, color){
+  const tipR=R-10;
+  const ax=CX+Math.cos(angle)*tipR, ay=CY+Math.sin(angle)*tipR;
+  const baseR=R-2;
+  const spread=0.1;
+  const bx=CX+Math.cos(angle-spread)*baseR, by=CY+Math.sin(angle-spread)*baseR;
+  const cx2=CX+Math.cos(angle+spread)*baseR, cy2=CY+Math.sin(angle+spread)*baseR;
+  ctx.beginPath();
+  ctx.moveTo(ax,ay);ctx.lineTo(bx,by);ctx.lineTo(cx2,cy2);ctx.closePath();
+  ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=4;ctx.fill();ctx.shadowBlur=0;
+}
+
+function drawClock(d){
+  ctx.clearRect(0,0,260,260);
+  markerHitTargets = [];
+
+  // BG
+  ctx.beginPath();ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.fillStyle='#161b22';ctx.fill();
+  ctx.strokeStyle='#21262d';ctx.lineWidth=1.5;ctx.stroke();
+
+  // Tick marks
+  for(let h=0;h<24;h++){
+    const a=(h/24)*Math.PI*2-Math.PI/2, maj=h%6===0;
+    const r1=R-(maj?14:8);
+    ctx.beginPath();
+    ctx.moveTo(CX+Math.cos(a)*r1,CY+Math.sin(a)*r1);
+    ctx.lineTo(CX+Math.cos(a)*R,CY+Math.sin(a)*R);
+    ctx.strokeStyle=maj?'#30363d':'#21262d';
+    ctx.lineWidth=maj?1.5:1;ctx.stroke();
+  }
+
+  // Hour labels
+  ctx.font='500 8px Inter,sans-serif';ctx.fillStyle='#8b949e';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  [[0,'12am'],[6,'6am'],[12,'12pm'],[18,'6pm']].forEach(([h,lbl])=>{
+    const a=(h/24)*Math.PI*2-Math.PI/2, rr=R-22;
+    ctx.fillText(lbl,CX+Math.cos(a)*rr,CY+Math.sin(a)*rr);
+  });
+
+  // Makrooh arcs (red, outer ring with gap from prayer band)
+  const MK_R=R+5; // extra gap outside the main ring
+  MAKROOH.forEach(mk=>{
+    const t1=parseTime(d[mk.s]), t2=parseTime(d[mk.e]);
+    if(t1===null||t2===null) return;
+    let span=t2-t1; if(span<=0) span+=1440;
+    const a1=angleFor(t1), a2=angleFor(t1)+(span/1440)*Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(CX,CY,MK_R,a1,a2);
+    ctx.strokeStyle='#f8514966';ctx.lineWidth=4;ctx.stroke();
+    // Register arc hit targets: sample points along the arc for hover detection
+    const steps=Math.max(6, Math.round(span/20));
+    for(let i=0;i<=steps;i++){
+      const a=a1+(a2-a1)*(i/steps);
+      const hx=CX+Math.cos(a)*MK_R, hy=CY+Math.sin(a)*MK_R;
+      markerHitTargets.push({x:hx,y:hy,r:10, label:mk.label, color:C_MAKROOH,
+        time:fmt(d[mk.s]), endTime:fmt(d[mk.e]), type:'makrooh'});
+    }
+  });
+
+  // More time arcs (dashed inner, staggered radii to avoid overlap)
+  const MORE_RADII={ishraq:R-13, chaasht:R-18, tahajjud:R-13};
+  ALL_TIMES.forEach(m=>{
+    if((m.type==='more') && m.endKey){
+      const t1=parseTime(d[m.key]), t2=parseTime(d[m.endKey]);
+      if(t1===null||t2===null) return;
+      let span=t2-t1; if(span<=0) span+=1440;
+      const mr=MORE_RADII[m.key]||R-13;
+      ctx.beginPath();
+      ctx.arc(CX,CY,mr,angleFor(t1),angleFor(t1)+(span/1440)*Math.PI*2);
+      ctx.strokeStyle=m.color+'55';ctx.lineWidth=2;
+      ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);
+    }
+  });
+
+  // Prayer arcs (solid band)
+  for(let i=0;i<PRAYERS.length;i++){
+    const p=PRAYERS[i], nx=PRAYERS[(i+1)%PRAYERS.length];
+    const t1=parseTime(d[p.key]), t2=parseTime(d[nx.key]);
+    if(t1===null||t2===null) continue;
+    let span=t2-t1; if(span<=0) span+=1440;
+    ctx.beginPath();
+    ctx.arc(CX,CY,R-5,angleFor(t1),angleFor(t1)+(span/1440)*Math.PI*2);
+    ctx.strokeStyle=p.color+'44';ctx.lineWidth=7;ctx.stroke();
+  }
+
+  // Prayer dot markers + register hit targets
+  PRAYERS.forEach(p=>{
+    const t=parseTime(d[p.key]); if(t===null) return;
+    const a=angleFor(t);
+    const x=CX+Math.cos(a)*(R-5), y=CY+Math.sin(a)*(R-5);
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle=p.color;ctx.fill();
+    // find endKey from ALL_TIMES
+    const full=ALL_TIMES.find(at=>at.key===p.key);
+    markerHitTargets.push({x,y,r:14, label:p.label, color:p.color, time:fmt(d[p.key]),
+      endTime:full&&full.endKey?fmt(d[full.endKey]):null, type:'prayer'});
+  });
+
+  // More/info/makrooh markers (diamonds) + hit targets
+  ALL_TIMES.forEach(m=>{
+    if(m.type==='prayer') return;
+    const t=parseTime(d[m.key]); if(t===null) return;
+    const a=angleFor(t), mr=MORE_RADII[m.key]||R-13;
+    const x=CX+Math.cos(a)*mr, y=CY+Math.sin(a)*mr;
+    ctx.beginPath();
+    ctx.moveTo(x+Math.cos(a)*3, y+Math.sin(a)*3);
+    ctx.lineTo(x+Math.cos(a+Math.PI/2)*2, y+Math.sin(a+Math.PI/2)*2);
+    ctx.lineTo(x+Math.cos(a+Math.PI)*3, y+Math.sin(a+Math.PI)*3);
+    ctx.lineTo(x+Math.cos(a-Math.PI/2)*2, y+Math.sin(a-Math.PI/2)*2);
+    ctx.closePath();
+    ctx.fillStyle=m.color;ctx.fill();
+    markerHitTargets.push({x,y,r:14, label:m.label, color:m.color, time:fmt(d[m.key]),
+      endTime:m.endKey?fmt(d[m.endKey]):null, type:m.type});
+  });
+
+  // Current time triangle
+  if(isToday(currentIdx)){
+    const now=new Date();
+    const mins=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+    drawTriangleMarker(angleFor(mins),'#e8c76a');
+  }
+}
+
+// ── Clock hover / tap tooltip ──
+const clockWrap=document.getElementById('clockWrap');
+const tip=document.getElementById('clockTip');
+const ctName=document.getElementById('ctName');
+const ctTime=document.getElementById('ctTime');
+const ctRange=document.getElementById('ctRange');
+
+function handleClockPointer(px,py){
+  const rect=canvas.getBoundingClientRect();
+  const mx=px-rect.left, my=py-rect.top;
+  let hit=null, bestDist=Infinity;
+  for(const m of markerHitTargets){
+    const dx=mx-m.x, dy=my-m.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<m.r && dist<bestDist){bestDist=dist;hit=m;}
+  }
+  if(hit){
+    ctName.textContent=hit.label;
+    ctName.style.color=hit.color;
+    ctTime.textContent=hit.time;
+    ctRange.textContent=hit.endTime && hit.endTime!=='—' ? 'Ends: '+hit.endTime : '';
+    // Position tooltip
+    let tx=hit.x+12, ty=hit.y-36;
+    if(tx+100>260) tx=hit.x-110;
+    if(ty<0) ty=hit.y+12;
+    tip.style.left=tx+'px';
+    tip.style.top=ty+'px';
+    tip.classList.add('show');
+  } else {
+    tip.classList.remove('show');
+  }
+}
+
+canvas.addEventListener('mousemove',e=>handleClockPointer(e.clientX,e.clientY));
+canvas.addEventListener('mouseleave',()=>tip.classList.remove('show'));
+canvas.addEventListener('touchstart',e=>{
+  const t=e.touches[0];
+  handleClockPointer(t.clientX,t.clientY);
+},{passive:true});
+canvas.addEventListener('touchmove',e=>{
+  const t=e.touches[0];
+  handleClockPointer(t.clientX,t.clientY);
+},{passive:true});
+canvas.addEventListener('touchend',()=>setTimeout(()=>tip.classList.remove('show'),1500));
+
+// ── Render ──
+function render(){
+  const d=DATA[currentIdx];
+  const today=isToday(currentIdx);
+
+  document.getElementById('hijriLabel').textContent=d.hijri+(today?' · Today':'');
+  document.getElementById('gregLabel').textContent=`${d.name}, ${d.greg}`;
+  document.getElementById('sehriTime').textContent=fmt(d.sehri);
+  document.getElementById('iftarTime').textContent=fmt(d.maghrib);
+
+  drawClock(d);
+
+  // Active / next prayer (main prayers only)
+  const nowMins=new Date().getHours()*60+new Date().getMinutes();
+  let activeKey=null, nextKey=null;
+  if(today){
+    let activeIdx=-1, nextIdx=-1;
+    for(let i=PRAYERS.length-1;i>=0;i--){
+      const t=parseTime(d[PRAYERS[i].key]);
+      if(t!==null&&nowMins>=t){activeIdx=i;break;}
+    }
+    nextIdx=activeIdx<PRAYERS.length-1?activeIdx+1:0;
+    if(activeIdx>=0) activeKey=PRAYERS[activeIdx].key;
+    nextKey=PRAYERS[nextIdx].key;
+    document.getElementById('nextName').textContent=PRAYERS[nextIdx].label;
+    document.getElementById('nextTime').textContent=fmt(d[PRAYERS[nextIdx].key]);
+    document.getElementById('liveTime').textContent=new Date().toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  } else {
+    document.getElementById('nextName').textContent='—';
+    document.getElementById('nextTime').textContent='';
+    document.getElementById('liveTime').textContent=d.name;
+  }
+
+  // Build sorted timeline starting from Fajr
+  const fajrMins = parseTime(d.fajr) || 330; // fallback ~5:30am
+  const sorted = ALL_TIMES
+    .map(t=>({...t, mins: parseTime(d[t.key])}))
+    .filter(t=>t.mins!==null)
+    .sort((a,b)=>{
+      let aAdj = a.mins < fajrMins ? a.mins+1440 : a.mins;
+      let bAdj = b.mins < fajrMins ? b.mins+1440 : b.mins;
+      return aAdj-bAdj;
+    });
+
+  const tl=document.getElementById('timeline');
+  tl.innerHTML='';
+
+  sorted.forEach(item=>{
+    const row=document.createElement('div');
+    const isPrayer = item.type==='prayer';
+    const isMakrooh = item.type==='makrooh';
+    const isMore = item.type==='more';
+
+    let cls='tl-row '+item.type;
+    if(isPrayer && item.key===activeKey) cls+=' active';
+    if(isPrayer && item.key===nextKey && today) cls+=' nxt';
+    row.className=cls;
+
+    // Dot style
+    let dotHtml='';
+    if(isPrayer){
+      dotHtml=`<div class="tl-dot solid" style="background:${item.color}"></div>`;
+    } else if(isMakrooh){
+      dotHtml=`<div class="tl-dot diamond" style="background:${item.color}"></div>`;
+    } else if(isMore){
+      dotHtml=`<div class="tl-dot ring" style="border-color:${item.color}"></div>`;
+    } else {
+      dotHtml=`<div class="tl-dot ring" style="border-color:${item.color};border-style:dotted"></div>`;
+    }
+
+    // Time display
+    const startT=fmt(d[item.key]);
+    let endT='';
+    if(item.endKey && d[item.endKey]) endT=fmt(d[item.endKey]);
+    const timeStr = endT && endT!=='—' ? `${startT} <span class="tl-end">→ ${endT}</span>` : startT;
+
+    // Note
+    const noteHtml = item.note ? `<span class="tl-note">${item.note}</span>` : '';
+
+    // Badge
+    let badgeHtml='';
+    if(isPrayer && item.key===activeKey) badgeHtml='<span class="badge now">Now</span>';
+    else if(isPrayer && item.key===nextKey && today) badgeHtml='<span class="badge next">Next</span>';
+
+    row.innerHTML=`
+      ${dotHtml}
+      <div class="tl-body">
+        <div class="tl-top"><span class="tl-name">${item.label}</span>${noteHtml}</div>
+        <div class="tl-time">${timeStr}</div>
+      </div>
+      ${badgeHtml}
+    `;
+    tl.appendChild(row);
+  });
+
+  document.getElementById('prevBtn').disabled=currentIdx===0;
+  document.getElementById('nextBtn').disabled=currentIdx===DATA.length-1;
+}
+
+document.getElementById('prevBtn').onclick=()=>{if(currentIdx>0){currentIdx--;render();}};
+document.getElementById('nextBtn').onclick=()=>{if(currentIdx<DATA.length-1){currentIdx++;render();}};
+
+render();
+setInterval(()=>{if(isToday(currentIdx))render();},1000);
+</script>
+</body>
+</html>
