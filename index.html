@@ -57,6 +57,10 @@ canvas{position:absolute;top:0;left:0;}
 .clock-tip .ct-time{font-size:.78rem;font-weight:700;color:var(--text);}
 .clock-tip .ct-range{font-size:.62rem;color:var(--muted);}
 
+/* Clock hint */
+.clock-hint{font-size:.58rem;color:var(--muted);text-align:center;margin:-10px 0 8px;opacity:.7;transition:opacity .6s;}
+.clock-hint.hidden{opacity:0;pointer-events:none;}
+
 /* Section label */
 .section-label{width:100%;max-width:360px;font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:4px 0 6px;padding-left:2px;}
 
@@ -161,6 +165,7 @@ body.clock-only .clock-wrap{margin-bottom:0;}
     <div class="ct-range" id="ctRange"></div>
   </div>
 </div>
+<div class="clock-hint" id="clockHint">Tap or hover on dots to see prayer times</div>
 
 <div class="section-label">All Prayer &amp; Key Times</div>
 <div id="timeline" class="timeline"></div>
@@ -395,6 +400,7 @@ function handleClockPointer(px,py){
     if(dist<m.r && dist<bestDist){bestDist=dist;hit=m;}
   }
   if(hit){
+    document.getElementById('clockHint').classList.add('hidden');
     ctName.textContent=hit.label;
     ctName.style.color=hit.color;
     ctTime.textContent=hit.time;
