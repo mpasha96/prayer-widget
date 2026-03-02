@@ -104,9 +104,20 @@ canvas{position:absolute;top:0;left:0;}
 .badge.next{background:#0d1f33;color:var(--accent);border:1px solid var(--accent);}
 
 .footer{font-size:.63rem;color:var(--muted);margin-top:16px;text-align:center;}
+
+/* Clock-only mode (?clock) */
+body.clock-only{padding:8px;min-height:auto;}
+body.clock-only .header,
+body.clock-only .banner,
+body.clock-only .section-label,
+body.clock-only .timeline,
+body.clock-only .footer{display:none;}
+body.clock-only .day-nav{margin-bottom:6px;}
+body.clock-only .clock-wrap{margin-bottom:0;}
 </style>
 </head>
 <body>
+<script>if(new URLSearchParams(location.search).has('clock'))document.body.classList.add('clock-only');</script>
 
 <div class="header">
   <h1>🕌 Ramadan 1447 — Karachi</h1>
